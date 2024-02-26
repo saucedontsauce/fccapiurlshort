@@ -6,7 +6,10 @@ const app = express();
 const dns = require('dns')
 const fs = require('fs');
 //const bfstore 
-const store = require('./backup.json') //= JSON.parse(bfstore.toString())
+let data =  fs.readFileSync('backup')
+const storedata = JSON.parse(atob(data))
+
+
 // class
 class Shortener {
   constructor(url) {
@@ -14,7 +17,7 @@ class Shortener {
     this.generate()
   }
   generate() {
-    let prevkeys = Object.keys(store.urls)
+    let prevkeys = Object.keys(storedata.urls)
     let newid = crypto.randomUUID()
     if (prevkeys.indexOf(newid) < 0) {
       this.short_url = newid
@@ -43,30 +46,30 @@ app.get('/api/hello', function (req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-app.get('/api/shorturl/:id', (req, res) => {
+app.get('/api/shorturl/:id', function (req, res){
   let id = req.params.id
-  if(!store.urls[id]){
+  if(!storedata.urls[id]){
  res.send('Shortener does not exist')
   }else {
-     let orig = store.urls[id].original_url
-  res.redirect(orig)
+     let orig = storedata.urls[id].original_url
+  res.redirect('https://'+orig)
   }
  
 })
 
-app.post('/api/shorturl', (req, res) => {
-  let data = req.body
-  let url
-  dns.lookup(data, (err,addr)=>{
+app.post('/api/shorturl', function (req, res) {
+  let data = new URL(req.body.url)
+  console.log(data)
+  dns.lookup(data.hostname, (err,addr)=>{
     if(err){
+      console.log('err',err)
       res.json({error:'Invalid url'})
     } else {
-
-      let prdata = { ...store }
-      let nob = new Shortener(url.href)
+      let prdata = { ...storedata }
+      let nob = new Shortener(data.hostname)
       prdata.urls[nob.short_url] = nob
-      let bf = Buffer.from(JSON.stringify(prdata))
-      fs.writeFile('backup.json', bf, (err) => {
+      let bf = btoa(JSON.stringify(prdata))
+      fs.writeFile('backup', bf, (err) => {
         if (err) {
           res.send('write error' + err)
         }
