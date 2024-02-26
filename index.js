@@ -5,7 +5,8 @@ const cors = require('cors');
 const app = express();
 const dns = require('dns')
 const fs = require('fs');
-const store = require('./backup.json')
+//const bfstore 
+const store = require('./backup.json') //= JSON.parse(bfstore.toString())
 // class
 class Shortener {
   constructor(url) {
@@ -56,22 +57,26 @@ app.get('/api/shorturl/:id', (req, res) => {
 app.post('/api/shorturl', (req, res) => {
   let data = req.body
   let url
-  try {
-    url = new URL(data.url)
-  } catch (err) {
-    res.json({ error: 'invalid url' })
-  }
-  console.log(url)
-  let prdata = { ...store }
-  let nob = new Shortener(url.href)
-  prdata.urls[nob.short_url] = nob
-  let bf = Buffer.from(JSON.stringify(prdata))
-  fs.writeFile('backup.json', bf, (err) => {
-    if (err) {
-      res.send('write error' + err)
+  dns.lookup(data, (err,addr)=>{
+    if(err){
+      res.json({error:'Invalid url'})
+    } else {
+
+      let prdata = { ...store }
+      let nob = new Shortener(url.href)
+      prdata.urls[nob.short_url] = nob
+      let bf = Buffer.from(JSON.stringify(prdata))
+      fs.writeFile('backup.json', bf, (err) => {
+        if (err) {
+          res.send('write error' + err)
+        }
+        res.send(nob)
+      })
+      
     }
-    res.send(nob)
   })
+
+ 
 
 
 })
