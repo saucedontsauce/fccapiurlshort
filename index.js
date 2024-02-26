@@ -14,18 +14,9 @@ const storedata = JSON.parse(atob(data))
 class Shortener {
   constructor(url) {
     this['original_url'] = url
-    this.generate()
+    this['short_url'] = storedata.urls.length
   }
-  generate() {
-    let prevkeys = Object.keys(storedata.urls)
-    let newid = crypto.randomUUID()
-    if (prevkeys.indexOf(newid) < 0) {
-      this.short_url = newid
-    } else {
-      newid = crypto.randomUUID()
-    }
 
-  }
 }
 
 
@@ -52,22 +43,22 @@ app.get('/api/shorturl/:id', function (req, res){
  res.send('Shortener does not exist')
   }else {
      let orig = storedata.urls[id].original_url
-  res.redirect('https://'+orig)
+  res.redirect(orig)
   }
  
 })
 
 app.post('/api/shorturl', function (req, res) {
   let data = new URL(req.body.url)
-  console.log(data)
   dns.lookup(data.hostname, (err,addr)=>{
     if(err){
       console.log('err',err)
       res.json({error:'Invalid url'})
     } else {
       let prdata = { ...storedata }
-      let nob = new Shortener(data.hostname)
-      prdata.urls[nob.short_url] = nob
+      let nob = new Shortener(data.href)
+      console.log(data)
+      prdata.urls.push(nob) 
       let bf = btoa(JSON.stringify(prdata))
       fs.writeFile('backup', bf, (err) => {
         if (err) {
